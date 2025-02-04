@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema({
   otpExpires: Date,
   docs: [{ // Array of document objects
     filename: String,
+    url: String,
     originalName: String,
     uploadDate: { type: Date, default: Date.now },
   }],

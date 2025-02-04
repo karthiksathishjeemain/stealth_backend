@@ -5,16 +5,10 @@ const docsController = require('../controllers/docsController');
 const multer = require('multer');
 
 // Configure multer storage
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/'); // Ensure the "uploads" folder exists
-  },
-  filename: function (req, file, cb) {
-    // Prepend Date.now() to filename to make it unique
-    cb(null, Date.now() + '-' + file.originalname);
-  },
-});
+
+const storage = multer.memoryStorage();  // store file in memory (buffer)
 const upload = multer({ storage });
+
 
 // Existing document upload endpoint (if any)
 router.post('/upload', upload.single('document'), docsController.uploadDoc);
