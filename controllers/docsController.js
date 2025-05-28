@@ -11,6 +11,9 @@ const s3 = new AWS.S3({
 });
 
 const bucketName = process.env.S3_BUCKET;
+// const path = require('path'); // To get file extension
+const pdfParse = require('pdf-parse');
+const mammoth = require('mammoth');
 
 // Upload document: assumes userId is passed in req.body (or through authentication)
 exports.uploadDoc = async (req, res) => {
@@ -37,14 +40,24 @@ exports.uploadDoc = async (req, res) => {
         console.error("S3 Upload Error:", err);
         return res.status(500).json({ message: 'Error uploading file', error: err });
       }
+      console.log("reached here", fileKey)
       // Save document info in the user's docs array (store the file URL and key)
       user.docs.push({
-                        // S3 key for future reference (update/delete)
+        key: fileKey,                 // S3 key for future reference (update/delete)
         url: data.Location,          // S3 URL to access the file
         originalName: req.file.originalname,
       });
       // console.log(data.Location)
       await user.save();
+      const savedDoc = user.docs[user.docs.length - 1];
+  console.log("Saved document:", {
+    id: savedDoc._id,
+    key: savedDoc.key,
+    url: savedDoc.url,
+    originalName: savedDoc.originalName
+  });
+  
+  
       res.json({ message: 'Document uploaded successfully', docs: user.docs });
     });
   } catch (error) {
@@ -83,7 +96,7 @@ exports.updateDoc = async (req, res) => {
     // Delete the old file from S3 using its key
     const deleteParams = {
       Bucket: bucketName,
-      Key: doc.originalName,
+      Key: doc.key,
     };
     await s3.deleteObject(deleteParams).promise();
   
@@ -133,8 +146,9 @@ exports.updateDoc = async (req, res) => {
       // Delete the file from S3 using its key
       const deleteParams = {
         Bucket: bucketName,
-        Key: doc.originalName,
+        Key: doc.key, // Use the key stored in the document
       };
+      console.log("Deleting document from S3 with params:", deleteParams);
       await s3.deleteObject(deleteParams).promise();
     
       // Remove the document from the user's docs array
@@ -146,4 +160,44 @@ exports.updateDoc = async (req, res) => {
       res.status(500).json({ message: "Server error", error });
     }
   };
-  
+
+exports.getDocContent = async (req, res) => {
+  const { userId, docId } = req.params;
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) return res.status(400).json({ message: 'User not found' });
+
+    const doc = user.docs.id(docId);
+    if (!doc) return res.status(400).json({ message: 'Document not found' });
+
+    const params = {
+      Bucket: bucketName,
+      Key: doc.key, // Ensure this matches what you used during upload
+    };
+    console.log("Fetching document from S3 with params:", params);
+    // Use async/await with getObject
+    const data = await s3.getObject(params).promise();
+
+    const ext = path.extname(doc.originalName).toLowerCase();
+    let content;
+
+    if (ext === '.pdf') {
+      const parsed = await pdfParse(data.Body);
+      content = parsed.text;
+    } else if (ext === '.docx') {
+      const result = await mammoth.extractRawText({ buffer: data.Body });
+      content = result.value;
+    } else if (ext === '.txt') {
+      content = data.Body.toString('utf-8');
+    } else {
+      return res.status(400).json({ message: 'Unsupported file type' });
+    }
+
+    res.json({ content });
+
+  } catch (error) {
+    console.error("Error getting document content:", error);
+    res.status(500).json({ message: 'Server error', error });
+  }
+};

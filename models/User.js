@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema({
   docs: [{ // Array of document objects
     filename: String,
     url: String,
+    key: String, // S3 key for the document
     originalName: String,
     uploadDate: { type: Date, default: Date.now },
   }],

@@ -15,7 +15,7 @@ router.post('/upload', upload.single('document'), docsController.uploadDoc);
 
 // Endpoint to retrieve documents
 router.get('/get/:userId', docsController.getDocs);
-
+router.get('/content/:userId/:docId', docsController.getDocContent);
 // New: Update document endpoint using FormData
 router.put('/update', upload.single('document'), docsController.updateDoc);
 
