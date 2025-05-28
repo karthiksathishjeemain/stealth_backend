@@ -11,7 +11,11 @@ exports.createSession = async (req, res) => {
   const { userId, meetTranscript } = req.body;
   try {
     // Use Groq's API to summarize the transcript
-    const prompt = `Summarize the following Google Meet discussion:\n\n${meetTranscript}\n\nSummary:`;
+   const prompt = `Summarize the following meeting transcript containing discussions between the user and other participants. Write the summary in second person, addressing the user directly using "You" instead of "The speaker" or "The user":
+
+${meetTranscript}
+
+Summary:`;
     const response = await groq.chat.completions.create({
       model: 'llama-3.1-8b-instant',
       messages: [{ role: 'user', content: prompt }],
