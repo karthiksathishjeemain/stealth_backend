@@ -1,16 +1,16 @@
-// backend/models/User.js
+
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
   email: { type: String, unique: true },
-  password: String,  // In production, store a hashed password!
+  password: String,  
   isVerified: { type: Boolean, default: false },
   otp: String,
   otpExpires: Date,
-  docs: [{ // Array of document objects
+  docs: [{ 
     filename: String,
     url: String,
-    key: String, // S3 key for the document
+    key: String, 
     originalName: String,
     uploadDate: { type: Date, default: Date.now },
   }],

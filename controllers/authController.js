@@ -1,17 +1,16 @@
-// backend/controllers/authController.js
+
 const User = require('../models/User');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',  // or another email service
+  service: 'gmail',   
   auth: {
     user: process.env.USERNAME_GOOGLE,
     pass: process.env.PASSWORD_GOOGLE,
   },
 });
 
-// Helper to generate a 6-digit OTP
 const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
@@ -62,7 +61,7 @@ exports.verifyOTP = async (req, res) => {
   }
 };
 
-// (Optional) Login endpoint – for simplicity, not using tokens here.
+
 exports.login = async (req, res) => {
   const { email, password } = req.body;
   try {

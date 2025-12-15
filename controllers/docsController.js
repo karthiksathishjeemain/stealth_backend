@@ -1,4 +1,4 @@
-// backend/controllers/docsController.js
+
 const User = require('../models/User');
 const fs = require('fs');
 const path = require('path');
@@ -11,11 +11,10 @@ const s3 = new AWS.S3({
 });
 
 const bucketName = process.env.S3_BUCKET;
-// const path = require('path'); // To get file extension
+
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 
-// Upload document: assumes userId is passed in req.body (or through authentication)
 exports.uploadDoc = async (req, res) => {
   const { userId } = req.body;
   if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
@@ -23,8 +22,7 @@ exports.uploadDoc = async (req, res) => {
   try {
     const user = await User.findById(userId);
     if (!user) return res.status(400).json({ message: 'User not found' });
-    
-    // Create S3 upload parameters
+ 
     const fileKey = Date.now() + '-' + req.file.originalname;
     const params = {
       Bucket: bucketName,
@@ -34,20 +32,19 @@ exports.uploadDoc = async (req, res) => {
       ACL: 'public-read'
     };
 
-    // Upload to S3
     s3.upload(params, async (err, data) => {
       if (err) {
         console.error("S3 Upload Error:", err);
         return res.status(500).json({ message: 'Error uploading file', error: err });
       }
       console.log("reached here", fileKey)
-      // Save document info in the user's docs array (store the file URL and key)
+   
       user.docs.push({
-        key: fileKey,                 // S3 key for future reference (update/delete)
-        url: data.Location,          // S3 URL to access the file
+        key: fileKey,                
+        url: data.Location,          
         originalName: req.file.originalname,
       });
-      // console.log(data.Location)
+   
       await user.save();
       const savedDoc = user.docs[user.docs.length - 1];
   console.log("Saved document:", {
@@ -65,7 +62,6 @@ exports.uploadDoc = async (req, res) => {
   }
 };
 
-// Retrieve documents for a user
 exports.getDocs = async (req, res) => {
   const { userId } = req.params;
   try {
@@ -77,8 +73,6 @@ exports.getDocs = async (req, res) => {
   }
 };
 
-// Update a document’s metadata (e.g., rename)
-// Update a document
 exports.updateDoc = async (req, res) => {
   const { userId, docId } = req.body;
   if (!req.file) {
@@ -89,18 +83,15 @@ exports.updateDoc = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(400).json({ message: "User not found" });
   
-    // Find the document subdocument by its _id
     const doc = user.docs.id(docId);
     if (!doc) return res.status(400).json({ message: "Document not found" });
   
-    // Delete the old file from S3 using its key
     const deleteParams = {
       Bucket: bucketName,
       Key: doc.key,
     };
     await s3.deleteObject(deleteParams).promise();
   
-    // Upload the new file to S3
     const newFileKey = Date.now() + '-' + req.file.originalname;
     const uploadParams = {
       Bucket: bucketName,
@@ -116,7 +107,6 @@ exports.updateDoc = async (req, res) => {
         return res.status(500).json({ message: 'Error updating file', error: err });
       }
   
-      // Update document info with new file details
       doc.key = newFileKey;
       doc.url = data.Location;
       doc.originalName = req.file.originalname;
@@ -131,27 +121,24 @@ exports.updateDoc = async (req, res) => {
   }
 };
 
-  // Delete a document
   exports.deleteDoc = async (req, res) => {
     const { userId, docId } = req.body;
     
     try {
       const user = await User.findById(userId);
       if (!user) return res.status(400).json({ message: "User not found" });
-    
-      // Find the document subdocument by its _id
+  
       const doc = user.docs.id(docId);
       if (!doc) return res.status(400).json({ message: "Document not found" });
     
-      // Delete the file from S3 using its key
       const deleteParams = {
         Bucket: bucketName,
-        Key: doc.key, // Use the key stored in the document
+        Key: doc.key, 
       };
       console.log("Deleting document from S3 with params:", deleteParams);
       await s3.deleteObject(deleteParams).promise();
     
-      // Remove the document from the user's docs array
+ 
       user.docs.pull({ _id: docId });
       await user.save();
       res.json({ message: "Document deleted successfully" });
@@ -173,10 +160,10 @@ exports.getDocContent = async (req, res) => {
 
     const params = {
       Bucket: bucketName,
-      Key: doc.key, // Ensure this matches what you used during upload
+      Key: doc.key, 
     };
     console.log("Fetching document from S3 with params:", params);
-    // Use async/await with getObject
+
     const data = await s3.getObject(params).promise();
 
     const ext = path.extname(doc.originalName).toLowerCase();

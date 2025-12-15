@@ -1,16 +1,14 @@
-// backend/controllers/sessionController.js
+
 const Session = require('../models/Session');
-// Optional: if using OpenAI for summarization:
+
 const { Groq } = require('groq-sdk');
 
-// Initialize Groq client
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-// Create a new session: summarization
 exports.createSession = async (req, res) => {
   const { userId, meetTranscript } = req.body;
   try {
-    // Use Groq's API to summarize the transcript
+
    const prompt = `Summarize the following meeting transcript containing discussions between the user and other participants. Write the summary in second person, addressing the user directly using "You" instead of "The speaker" or "The user":
 
 ${meetTranscript}
